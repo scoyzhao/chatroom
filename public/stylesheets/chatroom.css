@@ -1,0 +1,26 @@
+/* 聊天室样式 */
+
+.notice {
+	color: #EF0000;
+	font-weight: bold;
+}
+
+.msgbox {
+	height: 300px;
+	/*width: 300px;*/
+	overflow: auto;
+	/* 换行 */
+	word-break: break-all;
+	border: 1px #ccc solid;
+	border-radius: 5px;
+	background: #fff;
+	padding: 14px 20px;
+}
+
+.mymsg {
+	color: green;
+}
+
+.othermsg {
+	color: blue;
+}

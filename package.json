@@ -1,0 +1,24 @@
+{
+  "name": "chatroom",
+  "version": "0.0.1",
+  "description": "my first socket.io app",
+  "main": "chatroom.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "chatroom"
+  ],
+  "author": "scoyzhao",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "connect-flash": "^0.1.1",
+    "cookie-parser": "^1.4.3",
+    "express": "^4.15.2",
+    "express-handlebars": "^3.0.0",
+    "express-session": "^1.15.3",
+    "morgan": "^1.8.1",
+    "socket.io": "^2.0.1"
+  }
+}

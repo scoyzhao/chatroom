@@ -1,0 +1,234 @@
+{{!-- chatroom page --}}
+
+<div class="row">
+  <div class="col-sm-offset-5"><h2>秘密花园</h2></div>
+</div>
+
+<br />
+
+<div>
+  <span id="status"></span>
+  <span>,</span>
+  <span id="roomstatus" class="text-muted"></span>
+  <a href="/">[退出] 聊天室</a>
+</div>
+
+<br />
+
+<p id="notice" class="notice"></p>
+
+<h4>聊天记录</h4>
+<div id="msg" class="msgbox"></div>
+
+<br />
+
+<div>
+  <textarea id="msgsend" class="form-control" name="msgsend" placeholder="请输入消息" rows="3"></textarea>
+</div>
+<br />
+<div class="row">
+  <div id="tip" class="col-sm-offset-10">适度娱乐，请勿沉迷哦～</div>
+  <br />
+  <div class="col-sm-offset-11">
+    <a class="btn btn-primary" onclick="OL_SendMsg()">发送</a>
+  </div>
+</div>
+
+{{#section 'javascript'}}
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
+	<script type="text/javascript">
+		// 基本功能函数
+    function ol_pad(num, n)
+    {
+      // 变字符串格式
+      num = ""+num
+      var temp = num;
+
+      for(var i=0;i<(n-num.length);i++)
+      {
+        temp = "0"+temp
+      }
+      return temp;
+    }
+    function GetRequest() {
+      // 返回url的查询部分，包括?
+      var url = location.search; //获取url中"?"符后的字串
+      var theRequest = new Object();
+      // 返回？首次出现的位置
+      if (url.indexOf("?") != -1) {
+        // 返回从start下标开始的制定数目的字符
+        var str = url.substr(1);
+        // 数组
+        strs = str.split("&");
+        for(var i = 0; i < strs.length; i ++) {
+          // unescape（）可以对escape（）编码的字符串解码
+          // 原来的方法实用un...写在de..那里，会有中文乱码，改用这个以后没有了
+          theRequest[strs[i].split("=")[0]]=decodeURIComponent(strs[i].split("=")[1]);
+        }
+      }
+      return theRequest;
+    }
+    function GetDateTime() {
+      var obj = new Date();
+      return (obj.getFullYear()+"/"+ol_pad(obj.getMonth()+1, 2)+"/"+ol_pad(obj.getDate(), 2)+" "+ol_pad(obj.getHours(),2)+":"+ol_pad(obj.getMinutes(),2)+":"+ol_pad(obj.getSeconds(),2));
+    }
+
+    // 发送聊天信息
+    function OL_CleanInput() {
+      var obj = document.getElementById('msgsend');
+      obj.value = "";
+    }
+    function OL_ScrollChatWin() {
+      var obj = document.getElementById('msg');
+      obj.scrollTop = obj.scrollHeight;
+    }
+    function OL_SentAction() {
+      OL_ScrollChatWin();
+      OL_CleanInput();
+    }
+    function OL_CleanNotice() {
+      document.getElementById("notice").innerHTML = "";
+    }
+    function OL_CleanTip() {
+      document.getElementById("tip").innerHTML = "适度娱乐，请勿沉迷哦～";
+    }
+    function OL_SendMsg() {
+      var msg = document.getElementById("msgsend").value;
+      if(""==msg) {
+        OL_ShowTip(2);
+        return -1;
+      }
+
+      send_msg(msg);
+
+      document.getElementById("msg").innerHTML += "<p class='mymsg'>"+ G_Name +": <span class='time'>"+GetDateTime()+"</span></p>";
+      document.getElementById("msg").innerHTML += "<p>"+msg+"</p>";
+
+      OL_SentAction();
+    }
+    // 回车发送
+    let oTxt = document.getElementById('msgsend');
+    oTxt.onkeypress = function(ev) {
+      let oEvent = ev || event;
+
+      if (oEvent.keyCode === 13) {
+        OL_SendMsg();
+        return false;
+      }
+      // 阻止默认行为
+      // return false;
+    };
+
+    // // 修改昵称
+    // function OL_ModifyNickName() {
+    //   var newnickname = document.getElementById("newnickname").value;
+    //   if(""==newnickname) {
+    //     alert("新昵称不能为空！")
+    //     return -1;
+    //   }
+
+    //   change_name(newnickname);
+
+    //   document.getElementById("newnickname").value = "";
+    // }
+
+    // 通知
+    var NoticeTimer = null;
+    function OL_ShowNotice(msg, second) {
+      NoticeTimer = null;
+      document.getElementById("notice").innerHTML = "[消息] "+msg;
+      NoticeTimer = setTimeout("OL_CleanNotice()", second*1000)
+
+      // var history = document.getElementById("history");
+      // history.innerHTML = "<p>[消息] "+msg+"<span class='time'>"+GetDateTime()+"</span></p>" + history.innerHTML
+    }
+    // 空消息提示
+    var TipTimer = null;
+    function OL_ShowTip(second) {
+        NoticeTimer = null;
+        document.getElementById('tip').innerHTML = "不能发送空白信息!!!";
+        NoticeTimer = setTimeout("OL_CleanTip()", second*1000);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////
+    //启动
+    var socket = io.connect('http://127.0.0.1:3000');
+
+    //发送消息
+    var Request = new Object();
+    Request = GetRequest();
+    var G_Name = Request["username"];
+    if(null==G_Name) {
+      G_Name = "访客"+Math.ceil(Math.random()*10000);
+    }
+    socket.emit('join', G_Name, function (data) {
+      console.log(data);
+    });
+
+    //监听
+    socket.on('login', function (data) {
+      console.log(data);
+      // 如果有重名的，要更改一个随机名称
+      G_Name = data.username;
+      document.getElementById("status").innerHTML = "欢迎您！"+G_Name;
+      document.getElementById("roomstatus").innerHTML = "当前聊天有"+data.numUsers+"人";
+    });
+
+    socket.on('user_joined', function (data) {
+      console.log(data);
+      OL_ShowNotice(data.msg, 3);
+      document.getElementById("roomstatus").innerHTML = "当前聊天有"+data.numUsers+"人";
+      document.getElementById("msg").innerHTML += "<p class='notice'>欢迎 " + data.username + " 进入聊天室 " + GetDateTime() + "</p>";
+      OL_ScrollChatWin();
+    });
+
+    socket.on('user_left', function (data) {
+      console.log(data);
+      OL_ShowNotice(data.msg, 3);
+      document.getElementById("roomstatus").innerHTML = "当前聊天有"+data.numUsers+"人";
+      document.getElementById("msg").innerHTML += "<p class='notice'>" + G_Name + " 离开聊天室 " + GetDateTime() + "</p>";
+      OL_ScrollChatWin();
+    });
+
+    // //修改昵称
+    // function change_name(name){
+    //   socket.emit('change_name', name, function (data) {
+    //     console.log(data);
+    //   });
+    // }
+    // // 监听修改昵称后返回的消息
+    // socket.on('name_changed', function (data) {
+    //   console.log(data);
+    //   document.getElementById("status").innerHTML = "欢迎您！"+G_Name;
+    //   OL_ShowNotice(data.msg, 3);
+    // });
+    // // 监听修改昵称后返回给修改者的消息
+    // socket.on('name_changed_msg', function (data) {
+    //   console.log(data);
+    //   if("success"==data.res) {
+    //     document.getElementById("status").innerHTML = "欢迎您！"+data.newname;
+    //     OL_ShowNotice(data.msg, 3);
+    //   }
+    //   else {
+    //     OL_ShowNotice("修改昵称失败！"+data.error, 3);
+    //   }
+    // });
+
+    //发送消息
+    function send_msg(msg){
+      socket.emit('send_msg', msg, function (data) {
+        console.log(data);
+      });
+    }
+
+    // 监听消息
+    socket.on('msg_sent', function (data) {
+      console.log(data);
+
+      document.getElementById("msg").innerHTML += "<p class='othermsg'>"+ data.username +": <span class='time'>"+GetDateTime()+"</span></p>";
+      document.getElementById("msg").innerHTML += "<p>"+data.msg+"</p>";
+      OL_ScrollChatWin();
+    });
+	</script>
+{{/section}}
