@@ -187,7 +187,7 @@
       console.log(data);
       OL_ShowNotice(data.msg, 3);
       document.getElementById("roomstatus").innerHTML = "当前聊天有"+data.numUsers+"人";
-      document.getElementById("msg").innerHTML += "<p class='notice'>" + G_Name + " 离开聊天室 " + GetDateTime() + "</p>";
+      document.getElementById("msg").innerHTML += "<p class='notice'>" + data.username + " 离开聊天室 " + GetDateTime() + "</p>";
       OL_ScrollChatWin();
     });
 
